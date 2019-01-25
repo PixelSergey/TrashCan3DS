@@ -1,0 +1,7 @@
+launcher.dat
+savedata.dat
+*.3dsx
+*.elf
+*.cia
+*.smdh
+build/
