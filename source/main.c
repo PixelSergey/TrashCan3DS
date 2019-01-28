@@ -34,15 +34,46 @@ Result openArchive(FS_Archive* archive, u32* lowID, FS_MediaType mediatype, FS_A
 * Opens a file from a previously opened system archive.
 * @param file pointer to the handle of the file to open
 * @param archive the archive to open the file from
-' @param path[] the path to the file in the archive
+' @param path a string of the path to the file in the archive
 * @return A success value
 */
-Result openFile(Handle* file, FS_Archive archive, char path[]){
+Result openFile(Handle* file, FS_Archive archive, char* path){
     return FSUSER_OpenFile(file, archive, (FS_Path)fsMakePath(PATH_ASCII, path), FS_OPEN_READ, 0);
 }
 
+/**
+* Reads data from a previously opened file
+* @param buf a buffer to write the data to
+* @param size the size of the buffer (C does not keep array size information between function calls)
+* @param file the file to read
+* @return A success value
+*/
+Result readFile(char* buf, int size, Handle file){
+    u32 read;
+    Result res;
+    res = FSFILE_Read(file, &read, 0, buf, size);
+    printf("Read %ld (%#lx) bytes to buffer\n", read, read);
+    return res;
+}
+
+/**
+* Dumps a buffer to a file on the SD. Used for debugging purposes
+* @param buf the buffer to dump
+* @param size the size of the buffer (C does not keep array size information between function calls)
+* @param filename the file to output to
+*/
+Result dumpBuffer(char* buf, int size, char* filename){
+    FILE* dump = fopen(filename, "wb");
+	printf("Dumping %s...\n", filename);
+	fwrite(&buf, 1, size, dump);
+	fclose(dump);
+    return RL_SUCCESS;
+}
+
+/**Exits services*/
 int quit(){
     gfxExit();
+    cfguExit();
     return 0;
 }
 
@@ -77,16 +108,11 @@ int main(int argc, char* argv[]){
 			printf("Loaded Launcher.dat successfully\n");
 			
 			char buf[0x1e47]; // Size of Launcher.dat from 3dbrew.org
-			u32 size;
-            FSFILE_Read(launcher, &size, 0, &buf, sizeof(buf));
-            printf("Read %ld (%#lx) bytes to buffer\n", size, size);
+			res = readFile(buf, sizeof(buf), launcher);
 			
-			FILE* dump = fopen("/launcher.dat", "wb");
-			printf("Dumping Launcher.dat...\n");
-			fwrite(&buf, 1, sizeof(buf), dump);
-			fclose(dump);
-			
-			printf("Dumped successfully\n");
+			res = dumpBuffer(buf, sizeof(buf), "/Launcher.dat");
+            if(R_FAILED(res)){printf("Failed to dump Launcher.dat\n"); break;}
+			printf("Dumped Launcher.dat successfully\n");
 			
 			FSFILE_Close(launcher);
 			FSUSER_CloseArchive(syssave);
@@ -104,15 +130,9 @@ int main(int argc, char* argv[]){
             if(R_FAILED(res)){printf("Failed to load savadata.dat\n"); break;};
             
 			char buf[0x141b]; // Size of SaveData.dat from 3dbrew.org
-			u32 size;
-            FSFILE_Read(savedata, &size, 0, &buf, sizeof(buf));
-            printf("Read %ld (%#lx) bytes to buffer\n", size, size);
+			res = readFile(buf, sizeof(buf), savedata);
 			
-			FILE* dump = fopen("/savedata.dat", "wb");
-			printf("Dumping SaveData.dat...\n");
-			fwrite(&buf, 1, sizeof(buf), dump);
-			fclose(dump);
-			
+			dumpBuffer(buf, sizeof(buf), "/SaveData.dat");
 			printf("Dumped successfully\n");
 			
 			FSFILE_Close(savedata);
