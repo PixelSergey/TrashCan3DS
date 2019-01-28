@@ -3,6 +3,10 @@
 #include <string.h>
 #include <3ds.h>
 
+/*Global variables for storing the launcher and savedata files*/
+char launcher[0x1e47]; // Size of Launcher.dat from 3dbrew.org
+char savedata[0x141b]; // Size of SaveData.dat from 3dbrew.org
+
 /**
 * Opens a system archive.
 * @param archive a pointer to where to write the archive to
@@ -44,7 +48,7 @@ Result openFile(Handle* file, FS_Archive archive, char* path){
 /**
 * Reads data from a previously opened file
 * @param buf a buffer to write the data to
-* @param size the size of the buffer (C does not keep array size information between function calls)
+* @param size the size of the buffer
 * @param file the file to read
 * @return A success value
 */
@@ -59,7 +63,7 @@ Result readFile(char* buf, int size, Handle file){
 /**
 * Dumps a buffer to a file on the SD. Used for debugging purposes
 * @param buf the buffer to dump
-* @param size the size of the buffer (C does not keep array size information between function calls)
+* @param size the size of the buffer
 * @param filename the file to output to
 */
 Result dumpBuffer(char* buf, int size, char* filename){
@@ -67,6 +71,70 @@ Result dumpBuffer(char* buf, int size, char* filename){
 	printf("Dumping %s...\n", filename);
 	fwrite(&buf, 1, size, dump);
 	fclose(dump);
+    return RL_SUCCESS;
+}
+
+/**
+* Reads the Launcher.dat file to the launcher global variable
+*/
+Result loadLauncher(){
+    FS_Archive syssave;
+    Result res;
+    u32 savedataID[] = {0x00020082, 0x0002008f, 0x00020098, 0x00020098, 0x000200a1, 0x000200a9, 0x000200b1};
+    res = openArchive(&syssave, savedataID, MEDIATYPE_NAND, ARCHIVE_SYSTEM_SAVEDATA);
+    if(R_FAILED(res)){printf("Failed to open NAND system save\n"); return res;};
+    printf("Opened system save successfully\n");
+    
+    Handle launcherFile;
+    res = openFile(&launcherFile, syssave, "/Launcher.dat");
+    if(R_FAILED(res)){printf("Failed to load Launcher.dat\n"); return res;}
+    printf("Loaded Launcher.dat successfully\n");
+    
+    res = readFile(launcher, sizeof(launcher), launcherFile);
+    if(R_FAILED(res)){printf("Failed to read Launcher.dat\n"); return res;}
+    printf("Read Launcher.dat successfully\n");
+    
+    
+    res = dumpBuffer(launcher, sizeof(launcher), "/Launcher.dat");
+    if(R_FAILED(res)){printf("Failed to dump Launcher.dat\n"); return res;}
+    printf("Dumped Launcher.dat successfully\n");
+    
+    
+    FSFILE_Close(launcherFile);
+    FSUSER_CloseArchive(syssave);
+    printf("Closed files successfully\n\n");
+    return RL_SUCCESS;
+}
+
+/**
+* Reads the SaveData.dat file to the launcher global variable
+*/
+Result loadSaveData(){
+    FS_Archive extdata;
+    Result res;
+    u32 extdataID[] = {0x00000082, 0x0000008f, 0x00000098, 0x00000098, 0x000000a1, 0x000000a9, 0x000000b1};
+    res = openArchive(&extdata, extdataID, MEDIATYPE_SD, ARCHIVE_EXTDATA);
+    if(R_FAILED(res)){printf("Failed to open extdata\n"); return res;};
+    printf("Opened extdata successfully\n");
+    
+    Handle savedataFile;
+    res = openFile(&savedataFile, extdata, "/SaveData.dat");
+    if(R_FAILED(res)){printf("Failed to load savedata.dat\n"); return res;};
+    printf("Loaded SaveData.dat successfully\n");
+    
+    res = readFile(savedata, sizeof(savedata), savedataFile);
+    if(R_FAILED(res)){printf("Failed to read SaveData.dat\n"); return res;}
+    printf("Read SaveData.dat successfully\n");
+    
+    
+    res = dumpBuffer(savedata, sizeof(savedata), "/SaveData.dat");
+    if(R_FAILED(res)){printf("Failed to dump Launcher.dat\n"); return res;}
+    printf("Dumped successfully\n");
+    
+    
+    FSFILE_Close(savedataFile);
+    FSUSER_CloseArchive(extdata);
+    printf("Closed files successfully\n\n");
     return RL_SUCCESS;
 }
 
@@ -83,62 +151,22 @@ int main(int argc, char* argv[]){
 	gfxInitDefault();
     cfguInit();
     consoleInit(GFX_TOP, NULL);
-	printf("Initialised successfully\n");
+	printf("Initialised successfully\n\n");
 
 	// Main loop
 	while (aptMainLoop()){
 		gspWaitForVBlank();
 		gfxSwapBuffers();
 		hidScanInput();
-
-		u32 kDown = hidKeysDown();
-        Result res;
+        u32 kDown = hidKeysDown();
+        
 		if (kDown & KEY_START)
-			break; // break in order to return to menu
+			break; // Break in order to return to menu
 		if (kDown & KEY_A){ // Dump Launcher.dat (NAND savedata)
-			u32 savedataID[] = {0x00020082, 0x0002008f, 0x00020098, 0x00020098, 0x000200a1, 0x000200a9, 0x000200b1};
-            FS_Archive syssave;
-            res = openArchive(&syssave, savedataID, MEDIATYPE_NAND, ARCHIVE_SYSTEM_SAVEDATA);
-            if(R_FAILED(res)){printf("Failed to open NAND archive\n"); break;};
-			printf("Opened archive successfully\n");
-			
-			Handle launcher;
-			res = openFile(&launcher, syssave, "/Launcher.dat");
-			if(R_FAILED(res)){printf("Failed to load Launcher.dat\n"); break;}
-			printf("Loaded Launcher.dat successfully\n");
-			
-			char buf[0x1e47]; // Size of Launcher.dat from 3dbrew.org
-			res = readFile(buf, sizeof(buf), launcher);
-			
-			res = dumpBuffer(buf, sizeof(buf), "/Launcher.dat");
-            if(R_FAILED(res)){printf("Failed to dump Launcher.dat\n"); break;}
-			printf("Dumped Launcher.dat successfully\n");
-			
-			FSFILE_Close(launcher);
-			FSUSER_CloseArchive(syssave);
-			printf("Closed files successfully\n");
+            if(R_FAILED(loadLauncher())) break;
 		}
         if(kDown & KEY_B){ // Dump SaveData.dat (SD Extdata)
-            FS_Archive extdata;
-            u32 extdataID[] = {0x00000082, 0x0000008f, 0x00000098, 0x00000098, 0x000000a1, 0x000000a9, 0x000000b1};
-            res = openArchive(&extdata, extdataID, MEDIATYPE_SD, ARCHIVE_EXTDATA);
-            if(R_FAILED(res)){printf("Failed to open extdata archive\n"); break;};
-            printf("Opened archive successfully\n");
-            
-            Handle savedata;
-            res = openFile(&savedata, extdata, "/SaveData.dat");
-            if(R_FAILED(res)){printf("Failed to load savadata.dat\n"); break;};
-            
-			char buf[0x141b]; // Size of SaveData.dat from 3dbrew.org
-			res = readFile(buf, sizeof(buf), savedata);
-			
-			dumpBuffer(buf, sizeof(buf), "/SaveData.dat");
-			printf("Dumped successfully\n");
-			
-			FSFILE_Close(savedata);
-			FSUSER_CloseArchive(extdata);
-			printf("Closed files successfully\n");
-            
+            if(R_FAILED(loadSaveData())) break;
         }
 	}
     return quit();
