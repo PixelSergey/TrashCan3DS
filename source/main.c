@@ -84,7 +84,7 @@ Result loadLauncher(){
     Result res;
     u32 savedataID[] = {0x00020082, 0x0002008f, 0x00020098, 0x00020098, 0x000200a1, 0x000200a9, 0x000200b1};
     res = openArchive(&syssave, savedataID, MEDIATYPE_NAND, ARCHIVE_SYSTEM_SAVEDATA);
-    if(R_FAILED(res)){printf("Failed to open NAND system save\n"); return res;};
+    if(R_FAILED(res)){printf("Failed to open NAND system save\n"); return res;}
     printf("Opened system save successfully\n");
     
     Handle launcherFile;
@@ -117,12 +117,12 @@ Result loadSaveData(){
     Result res;
     u32 extdataID[] = {0x00000082, 0x0000008f, 0x00000098, 0x00000098, 0x000000a1, 0x000000a9, 0x000000b1};
     res = openArchive(&extdata, extdataID, MEDIATYPE_SD, ARCHIVE_EXTDATA);
-    if(R_FAILED(res)){printf("Failed to open extdata\n"); return res;};
+    if(R_FAILED(res)){printf("Failed to open extdata\n"); return res;}
     printf("Opened extdata successfully\n");
     
     Handle savedataFile;
     res = openFile(&savedataFile, extdata, "/SaveData.dat");
-    if(R_FAILED(res)){printf("Failed to load savedata.dat\n"); return res;};
+    if(R_FAILED(res)){printf("Failed to load savedata.dat\n"); return res;}
     printf("Loaded SaveData.dat successfully\n");
     
     res = readFile(savedata, sizeof(savedata), savedataFile);
@@ -145,7 +145,7 @@ Result loadSaveData(){
 * Finds the index of the trash folder in Launcher.dat. Launcher.dat must be loaded.
 * @return The index of the trash folder, or -1 if it does not exist
 */
-int findTrashFolder(){
+s8 findTrashFolder(){
     printf("Extracting folder names\n");
     u16 folderNames[60][0x11]; // 60 folder names, made up of 0x11 utf-16 chars
     memcpy(folderNames, launcher+0x1560, sizeof(folderNames)); // Extract folder names at 0x1560 from Launcher.dat
@@ -160,6 +160,29 @@ int findTrashFolder(){
         }
     }
     return -1;
+}
+
+/**
+* Finds the TitleIDs of the titles in provided folder
+* @param buf A buffer of length 360 to write the matched TitleIDs to
+* @param folderID The ID of the folder to match titles to
+* @return The number of titleIDs written
+*/
+int findTitlesInFolder(u64 buf[const 360], s8 folderID){
+    printf("Finding titles in folder\n");
+    s8 folderStatus[360];
+    u64 titleIDs[360];
+    memcpy(folderStatus, savedata+0xF80, sizeof(folderStatus)); // Extract which folder titles belong to from 0xF80 of SaveData.dat
+    memcpy(titleIDs, savedata+0x8, sizeof(titleIDs)); // Extract corresponding TitleIDs from 0x8 of SaveData.dat
+    
+    int position = 0;
+    for(int i=0; i<360; i++){
+        if(folderStatus[i] == folderID){
+            buf[position] = titleIDs[i];
+            position++;
+        }
+    }
+    return position;
 }
 
 
@@ -181,12 +204,20 @@ int main(int argc, char* argv[]){
     if(R_FAILED(loadLauncher())) return quit();
     if(R_FAILED(loadSaveData())) return quit();
     
-    int trashID = findTrashFolder();
+    s8 trashID = findTrashFolder();
     if(trashID == -1){
         printf("Could not find Trash folder\n");
         return quit();
     }else{
-        printf("Found trash folder at index %d", trashID);
+        printf("Found trash folder at index %d\n\n", trashID);
+    }
+    
+    u64 titleIDs[360] = {0};
+    int written = findTitlesInFolder(titleIDs, trashID);
+    if(written == 0){printf("No titles in folder!"); return quit();}
+    printf("Titles found:\n");
+    for(int i=0; i<written; i++){
+        printf("%016llx\n", titleIDs[i]);
     }
     
 	// Main loop
