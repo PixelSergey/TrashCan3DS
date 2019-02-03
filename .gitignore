@@ -1,5 +1,4 @@
-launcher.dat
-savedata.dat
+*.dat
 *.3dsx
 *.elf
 *.cia
