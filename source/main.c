@@ -172,7 +172,7 @@ int findTitlesInFolder(u64 buf[const 360], s8 folderID){
     printf("Finding titles in folder\n");
     s8 folderStatus[360];
     u64 titleIDs[360];
-    memcpy(folderStatus, savedata+0xF80, sizeof(folderStatus)); // Extract which folder titles belong to from 0xF80 of SaveData.dat
+    memcpy(folderStatus, savedata+0xf80, sizeof(folderStatus)); // Extract which folder titles belong to from 0xf80 of SaveData.dat
     memcpy(titleIDs, savedata+0x8, sizeof(titleIDs)); // Extract corresponding TitleIDs from 0x8 of SaveData.dat
     
     int position = 0;
@@ -203,6 +203,8 @@ int main(int argc, char* argv[]){
     
     if(R_FAILED(loadLauncher())) return quit();
     if(R_FAILED(loadSaveData())) return quit();
+    
+    if((u8)launcher[0]<0xd8 || (u8)savedata[0]<0x4){printf("Outdated HOME menu archives. Please update your system to the latest version!"); return quit();}
     
     s8 trashID = findTrashFolder();
     if(trashID == -1){
