@@ -3,16 +3,16 @@
 #include <string.h>
 #include <3ds.h>
 
-/*Global variables for storing the launcher and savedata files*/
-char launcher[0x1e47]; // Size of Launcher.dat from 3dbrew.org
-char savedata[0x141b]; // Size of SaveData.dat from 3dbrew.org
+// Global variables for storing the launcher and savedata files
+char launcher[0x1e47]; // Size of Launcher.dat from https://3dbrew.org/wiki/Home_Menu
+char savedata[0x141b]; // Size of SaveData.dat from https://3dbrew.org/wiki/Home_Menu
 
 /**
 * Opens a system archive.
-* @param archive a pointer to where to write the archive to
-* @param lowID an array of low titleIDs (per region: JPN, USA, EUR...) of the archive to be opened
-* @param mediatype the type of media to be opened (MEDIATYPE_NAND or MEDIATYPE_SD)
-* @param archiveID the type of archive (extdata, savedata etc.) ( https://smealum.github.io/ctrulib/fs_8h.html#a24416208e0f4c6c6efc3b2118a2d8803 )
+* @param archive A pointer to where to write the archive to
+* @param lowID An array of low titleIDs (per region: JPN, USA, EUR...) of the archive to be opened
+* @param mediatype The type of media to be opened (MEDIATYPE_NAND or MEDIATYPE_SD)
+* @param archiveID The type of archive (extdata, savedata etc.) ( https://smealum.github.io/ctrulib/fs_8h.html#a24416208e0f4c6c6efc3b2118a2d8803 )
 * @return A success value
 */
 Result openArchive(FS_Archive* archive, u32* lowID, FS_MediaType mediatype, FS_ArchiveID archiveID){
@@ -36,9 +36,9 @@ Result openArchive(FS_Archive* archive, u32* lowID, FS_MediaType mediatype, FS_A
 
 /**
 * Opens a file from a previously opened system archive.
-* @param file pointer to the handle of the file to open
-* @param archive the archive to open the file from
-' @param path a string of the path to the file in the archive
+* @param file Pointer to the handle of the file to open
+* @param archive The archive to open the file from
+' @param path A string of the path to the file in the archive
 * @return A success value
 */
 Result openFile(Handle* file, FS_Archive archive, char* path){
@@ -46,10 +46,10 @@ Result openFile(Handle* file, FS_Archive archive, char* path){
 }
 
 /**
-* Reads data from a previously opened file
-* @param buf a buffer to write the data to
-* @param size the size of the buffer
-* @param file the file to read
+* Reads data from a previously opened file.
+* @param buf A buffer to write the data to
+* @param size The size of the buffer
+* @param file The file to read
 * @return A success value
 */
 Result readFile(char* buf, int size, Handle file){
@@ -61,21 +61,23 @@ Result readFile(char* buf, int size, Handle file){
 }
 
 /**
-* Dumps a buffer to a file on the SD. Used for debugging purposes
-* @param buf the buffer to dump
-* @param size the size of the buffer
-* @param filename the file to output to
+* Dumps a buffer to a file on the SD. Used for debugging purposes.
+* @param buf The buffer to dump
+* @param size The size of the buffer
+* @param filename The file to output to
+* @return A success value
 */
-Result dumpBuffer(char* buf, int size, char* filename){
+Result dumpBuffer(void* buf, int size, char* filename){
     FILE* dump = fopen(filename, "wb");
 	printf("Dumping %s...\n", filename);
-	fwrite(&buf, 1, size, dump);
+	fwrite(buf, 1, size, dump);
 	fclose(dump);
     return RL_SUCCESS;
 }
 
 /**
-* Reads the Launcher.dat file to the launcher global variable
+* Reads the Launcher.dat file to the launcher global variable.
+* @return A success value
 */
 Result loadLauncher(){
     FS_Archive syssave;
@@ -107,7 +109,8 @@ Result loadLauncher(){
 }
 
 /**
-* Reads the SaveData.dat file to the launcher global variable
+* Reads the SaveData.dat file to the savedata global variable.
+* @return A success value
 */
 Result loadSaveData(){
     FS_Archive extdata;
@@ -126,17 +129,39 @@ Result loadSaveData(){
     if(R_FAILED(res)){printf("Failed to read SaveData.dat\n"); return res;}
     printf("Read SaveData.dat successfully\n");
     
-    
+    /*
     res = dumpBuffer(savedata, sizeof(savedata), "/SaveData.dat");
     if(R_FAILED(res)){printf("Failed to dump Launcher.dat\n"); return res;}
     printf("Dumped successfully\n");
-    
+    */
     
     FSFILE_Close(savedataFile);
     FSUSER_CloseArchive(extdata);
     printf("Closed files successfully\n\n");
     return RL_SUCCESS;
 }
+
+/**
+* Finds the index of the trash folder in Launcher.dat. Launcher.dat must be loaded.
+* @return The index of the trash folder, or -1 if it does not exist
+*/
+int findTrashFolder(){
+    printf("Extracting folder names\n");
+    u16 folderNames[60][0x11]; // 60 folder names, made up of 0x11 utf-16 chars
+    memcpy(folderNames, launcher+0x1560, sizeof(folderNames)); // Extract folder names at 0x1560 from Launcher.dat
+    /* dumpBuffer(folderNames, sizeof(folderNames), "/names.dat"); */
+    printf("Extracted names succcessfully\n");
+    
+    u16 folderstr[0x11] = {0};
+    utf8_to_utf16(folderstr, (u8*)"Trash", sizeof(folderstr));
+    for(int i=0; i<60; i++){
+        if(memcmp(folderstr, folderNames[i], sizeof(folderstr))==0){
+            return i;
+        }
+    }
+    return -1;
+}
+
 
 /**Exits services*/
 int quit(){
@@ -152,22 +177,27 @@ int main(int argc, char* argv[]){
     cfguInit();
     consoleInit(GFX_TOP, NULL);
 	printf("Initialised successfully\n\n");
-
+    
+    if(R_FAILED(loadLauncher())) return quit();
+    if(R_FAILED(loadSaveData())) return quit();
+    
+    int trashID = findTrashFolder();
+    if(trashID == -1){
+        printf("Could not find Trash folder\n");
+        return quit();
+    }else{
+        printf("Found trash folder at index %d", trashID);
+    }
+    
 	// Main loop
 	while (aptMainLoop()){
 		gspWaitForVBlank();
 		gfxSwapBuffers();
 		hidScanInput();
-        u32 kDown = hidKeysDown();
         
+        u32 kDown = hidKeysDown();
 		if (kDown & KEY_START)
 			break; // Break in order to return to menu
-		if (kDown & KEY_A){ // Dump Launcher.dat (NAND savedata)
-            if(R_FAILED(loadLauncher())) break;
-		}
-        if(kDown & KEY_B){ // Dump SaveData.dat (SD Extdata)
-            if(R_FAILED(loadSaveData())) break;
-        }
 	}
     return quit();
 }
