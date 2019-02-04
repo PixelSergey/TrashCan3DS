@@ -96,11 +96,11 @@ Result loadLauncher(){
     if(R_FAILED(res)){printf("Failed to read Launcher.dat\n"); return res;}
     printf("Read Launcher.dat successfully\n");
     
-    
+    /*
     res = dumpBuffer(launcher, sizeof(launcher), "/Launcher.dat");
     if(R_FAILED(res)){printf("Failed to dump Launcher.dat\n"); return res;}
     printf("Dumped Launcher.dat successfully\n");
-    
+    */
     
     FSFILE_Close(launcherFile);
     FSUSER_CloseArchive(syssave);
@@ -163,8 +163,8 @@ s8 findTrashFolder(){
 }
 
 /**
-* Finds the TitleIDs of the titles in provided folder
-* @param buf A buffer of length 360 to write the matched TitleIDs to
+* Finds the TitleIDs of the titles in provided folder.
+* @param buf A u64 array of length (at least) 360 to write the matched TitleIDs to
 * @param folderID The ID of the folder to match titles to
 * @return The number of titleIDs written
 */
@@ -185,11 +185,32 @@ int findTitlesInFolder(u64 buf[const 360], s8 folderID){
     return position;
 }
 
+/**
+* Deletes titles (and tickets) from an array of titleIDs.
+* @param toDelete An array of u64 TitleIDs of apps to be deleted
+* @param length The number of elements in the array
+* @param deleteTickets Delete tickets or not? 0=false, 1=true
+* @return A success value
+*/
+Result deleteTitles(u64* toDelete, int length, int deleteTickets){
+    Result res;
+    for(int i=0; i<length; i++){
+        res = AM_DeleteAppTitle(MEDIATYPE_SD, toDelete[i]);
+        if(R_FAILED(res)) return res;
+        if(deleteTickets!=0){
+            res = AM_DeleteTicket(toDelete[i]);
+            if(R_FAILED(res)) return res;
+        }
+    }
+    return RL_SUCCESS;
+}
+
 
 /**Exits services*/
 int quit(){
-    gfxExit();
+    amExit();
     cfguExit();
+    gfxExit();
     return 0;
 }
 
@@ -198,13 +219,14 @@ int main(int argc, char* argv[]){
     // Initialise services
 	gfxInitDefault();
     cfguInit();
+    amInit();
     consoleInit(GFX_TOP, NULL);
 	printf("Initialised successfully\n\n");
     
     if(R_FAILED(loadLauncher())) return quit();
     if(R_FAILED(loadSaveData())) return quit();
     
-    if((u8)launcher[0]<0xd8 || (u8)savedata[0]<0x4){printf("Outdated HOME menu archives. Please update your system to the latest version!"); return quit();}
+    if((u8)launcher[0]<0x2d || (u8)savedata[0]<0x4){printf("Outdated HOME menu archives. Please update your system to the latest version!"); return quit();}
     
     s8 trashID = findTrashFolder();
     if(trashID == -1){
@@ -217,20 +239,32 @@ int main(int argc, char* argv[]){
     u64 titleIDs[360] = {0};
     int written = findTitlesInFolder(titleIDs, trashID);
     if(written == 0){printf("No titles in folder!"); return quit();}
+    
     printf("Titles found:\n");
     for(int i=0; i<written; i++){
         printf("%016llx\n", titleIDs[i]);
     }
     
+    printf("Press (A) to delete found titles\n");
+    printf("Press (B) to delete found titles and tickets\n");
+    printf("Press (START) to exit\n\n");
 	// Main loop
-	while (aptMainLoop()){
+	while(aptMainLoop()){
 		gspWaitForVBlank();
 		gfxSwapBuffers();
 		hidScanInput();
         
         u32 kDown = hidKeysDown();
-		if (kDown & KEY_START)
+		if(kDown & KEY_START)
 			break; // Break in order to return to menu
+        if(kDown & KEY_A){
+            if(R_FAILED(deleteTitles(titleIDs, written, 0))){printf("Could not delete titles!\n"); break;}
+            printf("Deleted titles successfully\n");
+        }
+        if(kDown & KEY_B){
+            if(R_FAILED(deleteTitles(titleIDs, written, 1))){printf("Could not delete titles/tickets!\n"); break;}
+            printf("Deleted titles and tickets successfully\n");
+        }
 	}
     return quit();
 }
