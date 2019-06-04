@@ -164,11 +164,13 @@ s8 findTrashFolder(){
 
 /**
 * Finds the TitleIDs of the titles in provided folder.
-* @param buf A u64 array of length (at least) 360 to write the matched TitleIDs to
+* This function trusts that there are no more than 60 titles in one folder, which is what the 3DS normally allows.
+* (Technically, if SaveData.dat is modified externally, up to 360 titles can point to one folder, but the 3DS will not allow this)
+* @param buf A u64 array of length (at least) 60 to write the matched TitleIDs to
 * @param folderID The ID of the folder to match titles to
 * @return The number of titleIDs written
 */
-int findTitlesInFolder(u64 buf[const 360], s8 folderID){
+int findTitlesInFolder(u64 buf[const 60], s8 folderID){
     printf("Finding titles in folder\n");
     s8 folderStatus[360];
     u64 titleIDs[360];
@@ -236,7 +238,7 @@ int main(int argc, char* argv[]){
         printf("Found trash folder at index %d\n\n", trashID);
     }
     
-    u64 titleIDs[360] = {0};
+    u64 titleIDs[60] = {0};
     int written = findTitlesInFolder(titleIDs, trashID);
     if(written == 0){printf("No titles in folder!"); return quit();}
     
@@ -260,10 +262,12 @@ int main(int argc, char* argv[]){
         if(kDown & KEY_A){
             if(R_FAILED(deleteTitles(titleIDs, written, 0))){printf("Could not delete titles!\n"); break;}
             printf("Deleted titles successfully\n");
+			break;
         }
         if(kDown & KEY_B){
             if(R_FAILED(deleteTitles(titleIDs, written, 1))){printf("Could not delete titles/tickets!\n"); break;}
             printf("Deleted titles and tickets successfully\n");
+			break;
         }
 	}
     return quit();
