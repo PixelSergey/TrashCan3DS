@@ -16,12 +16,7 @@ int init(){
     amInit();
     consoleInit(GFX_TOP, NULL);
 	printf("Initialised successfully\n\n");
-    
-	// Initalise variables
-    if(R_FAILED(loadLauncher())) return -1;
-    if(R_FAILED(loadSaveData())) return -1;
-    
-    if((u8)launcher[0]<0x2d || (u8)savedata[0]<0x4){printf("Outdated HOME menu archives. Please update your system to the latest version!"); return -1;}
+	
 	return RL_SUCCESS;
 }
 
@@ -173,8 +168,12 @@ int findTitlesInFolder(u64 buf[const 60], s8 folderID){
 }
 
 int refreshQueue(u64 deletionQueue[const 60]){
+	if(R_FAILED(loadLauncher())) return -1;
+    if(R_FAILED(loadSaveData())) return -1;
+    if((u8)launcher[0]<0x2d || (u8)savedata[0]<0x4){printf("Outdated HOME menu archives. Please update your system to the latest version!"); return -1;}
+	
 	s8 trashID = findTrashFolder();
-    if(trashID == -1) return 0;
+    if(trashID == -1) return -1;
     int deletionCount = findTitlesInFolder(deletionQueue, trashID);
 	return deletionCount;
 }

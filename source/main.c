@@ -10,7 +10,7 @@ int main(int argc, char* argv[]){
 	
 	u64 deletionQueue[60] = {0};
 	int deletionCount = refreshQueue();
-	if(deletionCount == 0) return quit();
+	if(deletionCount <= 0) return quit();
     
     printf("Press (A) to delete found titles\n");
     printf("Press (B) to delete found titles and tickets\n");
@@ -36,8 +36,9 @@ int main(int argc, char* argv[]){
 			break;
         }
 		if(kDown & KEY_X){
-			deletionCount = refreshQueue();
-			printf("Refreshed queue successfully\n");
+			deletionCount = refreshQueue(deletionQueue);
+			if(deletionCount < 0) return quit();
+			printf("Refreshed queue successfully\n\n");
 		}
 	}
     return quit();

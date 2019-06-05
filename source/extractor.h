@@ -85,7 +85,7 @@ int findTitlesInFolder(u64 buf[const 60], s8 folderID);
 
 /**
 * Refreshes the queue of titles to delete into the deletionQueue global variable.
-* @return the number of TitleIDs added to the queue
+* @return the number of TitleIDs added to the queue, or -1 on failure
 */
 int refreshQueue();
 
