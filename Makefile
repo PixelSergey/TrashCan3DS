@@ -42,7 +42,7 @@ GFXBUILD	    :=	$(BUILD)
 #GFXBUILD	    :=	$(ROMFS)/gfx
 
 APP_TITLE       := Trash Can
-APP_AUTHOR      := PixelSergey | Granny\#5402
+APP_AUTHOR      := PixelSergey | Granny
 APP_DESCRIPTION := Mass-delete apps quickly and efficiently
 
 # Graphics files
@@ -58,7 +58,7 @@ PRODUCT_CODE    :=	CTR-P-TRSH
 # Versioning
 VERSION_MAJOR   := 1
 VERSION_MINOR   := 0
-VERSION_BUILD   := 0
+VERSION_BUILD   := 1
 
 ICON_FLAGS      :=	nosavebackups,visible
 
@@ -211,7 +211,7 @@ all:
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(GFXBUILD) $(OUTDIR)
+	@rm -fr $(BUILD) $(GFXBUILD) $(OUTDIR) $(OUTPUT).3dsx $(OUTPUT).cia $(OUTPUT).elf $(OUTPUT).smdh
 
 #---------------------------------------------------------------------------------
 else
