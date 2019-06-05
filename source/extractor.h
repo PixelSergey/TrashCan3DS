@@ -97,3 +97,10 @@ int refreshQueue();
 * @return A success value
 */
 Result deleteTitles(u64* toDelete, int length, int deleteTickets);
+
+/**
+* A hook function to the APT service used to reload titles automatically when the app is restored from the HOME menu.
+* @param hook The hook type (automatically passed)
+* @param param Extra parameters (automatically passed)
+*/
+void returnAptHook(APT_HookType hook, void* param);

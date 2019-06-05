@@ -15,6 +15,7 @@ int init(){
     cfguInit();
     amInit();
     consoleInit(GFX_TOP, NULL);
+	
 	printf("Initialised successfully\n\n");
 	
 	return RL_SUCCESS;
@@ -189,4 +190,10 @@ Result deleteTitles(u64* toDelete, int length, int deleteTickets){
         }
     }
     return RL_SUCCESS;
+}
+
+void returnAptHook(APT_HookType hook, void* param){
+	if(hook == APTHOOK_ONRESTORE){
+		refreshQueue((u64*)param);
+	}
 }

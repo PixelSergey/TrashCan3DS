@@ -5,12 +5,16 @@
 
 #include "extractor.h"
 
+static aptHookCookie aptCookie; // A cookie for the hook to the APT services
+
 int main(int argc, char* argv[]){
     if(R_FAILED(init())) return quit();
 	
 	u64 deletionQueue[60] = {0};
 	int deletionCount = refreshQueue();
 	if(deletionCount <= 0) return quit();
+	
+	aptHook(&aptCookie, returnAptHook, (void*)deletionQueue);
     
     printf("Press (A) to delete found titles\n");
     printf("Press (B) to delete found titles and tickets\n");
