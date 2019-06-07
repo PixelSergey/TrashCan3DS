@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <3ds.h>
+#include <citro2d.h>
 
 /**
 * Initialises services and global varibles.

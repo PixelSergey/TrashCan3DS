@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <3ds.h>
+#include <citro2d.h>
 
 #include "extractor.h"
 
@@ -14,17 +15,26 @@ int init(){
 	gfxInitDefault();
     cfguInit();
     amInit();
+	romfsInit();
     consoleInit(GFX_TOP, NULL);
 	
-	printf("Initialised successfully\n\n");
+	if(!C3D_Init(C3D_DEFAULT_CMDBUF_SIZE)) return -1;
+	if(!C2D_Init(C2D_DEFAULT_MAX_OBJECTS)) return -1;
+	C2D_Prepare();
 	
+	printf("Initialised successfully\n\n");
 	return RL_SUCCESS;
 }
 
 int quit(){
+	C2D_Fini();
+	C3D_Fini();
+	
+	romfsExit();
     amExit();
     cfguExit();
     gfxExit();
+	
     return 0;
 }
 

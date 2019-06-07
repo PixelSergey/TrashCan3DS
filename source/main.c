@@ -12,9 +12,11 @@ int main(int argc, char* argv[]){
 	
 	u64 deletionQueue[60] = {0};
 	int deletionCount = refreshQueue();
-	if(deletionCount <= 0) return quit();
+	if(deletionCount < 0) return quit();
 	
 	aptHook(&aptCookie, returnAptHook, (void*)deletionQueue);
+	C3D_RenderTarget* top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
+	C3D_RenderTarget* btm = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
     
     printf("Press (A) to delete found titles\n");
     printf("Press (B) to delete found titles and tickets\n");
@@ -44,6 +46,12 @@ int main(int argc, char* argv[]){
 			if(deletionCount < 0) return quit();
 			printf("Refreshed queue successfully\n\n");
 		}
+		
+		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+		C2D_TargetClear(btm, C2D_Color32f(0.0f, 0.0f, 0.0f, 1.0f));
+		C2D_SceneBegin(btm);
+		C2D_DrawRectangle(10, 10, 0, 100, 100, C2D_Color32f(1.0f, 0.0f, 0.0f, 1.0f),C2D_Color32f(0.0f, 1.0f, 0.0f, 1.0f),C2D_Color32f(0.0f, 0.0f, 1.0f, 1.0f),C2D_Color32f(1.0f, 1.0f, 1.0f, 1.0f));
+		C3D_FrameEnd(0);
 	}
     return quit();
 }
