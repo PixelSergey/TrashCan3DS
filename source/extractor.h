@@ -1,6 +1,6 @@
 /**
 * @file extractor.h
-* A header file for extractor.c. Contains all of the "brains" of the program. 
+* A header file for extractor.c. Contains all of the "brains" of the program.
 */
 #pragma once
 
