@@ -10,13 +10,17 @@
 #include <3ds.h>
 #include <citro2d.h>
 
+#include "gui.h"
+
 /**
 * Initialises services and global varibles.
 * @return A success value
 */
 int init();
 
-/**Exits services*/
+/**Exits services
+* @return 0
+*/
 int quit();
 
 /**
@@ -77,7 +81,7 @@ s8 findTrashFolder();
 /**
 * Finds the TitleIDs of the titles in provided folder.
 * This function trusts that there are no more than 60 titles in one folder, which is what the 3DS normally allows.
-* (Technically, if SaveData.dat is modified externally, up to 360 titles can point to one folder, but the 3DS will not allow this)
+* (Technically, if SaveData.dat is modified externally, up to 360 titles can point to one folder, but the 3DS will not allow this normally)
 * @param buf A u64 array of length (at least) 60 to write the matched TitleIDs to
 * @param folderID The ID of the folder to match titles to
 * @return The number of titleIDs written
