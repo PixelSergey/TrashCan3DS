@@ -51,14 +51,15 @@ Result openFile(Handle* file, FS_Archive archive, char* path);
 */
 Result readFile(char* buf, int size, Handle file);
 
-/**
+
+/*
 * Dumps a buffer to a file on the SD. Used for debugging purposes.
 * @param buf The buffer to dump
 * @param size The size of the buffer
 * @param filename The file to output to
 * @return A success value
-*/
 Result dumpBuffer(void* buf, int size, char* filename);
+*/
 
 /**
 * Reads the Launcher.dat file to the launcher global variable.

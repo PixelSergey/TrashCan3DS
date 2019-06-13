@@ -28,5 +28,19 @@ void draw();
 /**
 * Shows a message on-screen until the (A) button is pressed.
 * @param message The message to be displayed
+* @param color The color of the text to be displayed
+* @param scale The scale factor of the text
 */
-void textBox(char* message);
+void textBox(char* message, u32 color, float scale);
+
+/**
+* Shows a textBox with green text on-screen.
+* @param message The message to be displayed
+*/
+void success(char* message);
+
+/**
+* Shows a textBox with red text on-screen.
+* @param message The message to be displayed
+*/
+void error(char* message);
