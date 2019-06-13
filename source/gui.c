@@ -29,11 +29,20 @@ void draw(){
 	C3D_FrameEnd(0);
 }
 
-void textBox(char* message, u32 color, float scale){
+int textBox(char* message, u32 color, int type){
 	C2D_Text text, instr;
+	float scale = 0.6;
 	C2D_TextBufClear(textBuf);
 	C2D_TextParse(&text, textBuf, message);
-	C2D_TextParse(&instr, textBuf, "Press \uE000 to continue");
+	char inststr[50];
+	switch(type){
+		default:
+		case 0:
+			strcpy(inststr, "Press \uE000 to continue"); break;
+		case 1:
+			strcpy(inststr, "No \uE001    Yes \uE000"); break;
+	}
+	C2D_TextParse(&instr, textBuf, inststr);
 	C2D_TextOptimize(&text);
 	C2D_TextOptimize(&instr);
 	float w, h, instw, insth;
@@ -43,7 +52,8 @@ void textBox(char* message, u32 color, float scale){
 	while(aptMainLoop()){
 		hidScanInput();
 		u32 kDown = hidKeysDown();
-		if(kDown & KEY_A) break;
+		if(kDown & KEY_A) return 1;
+		if(type == 1 && kDown & KEY_B) return 0;
 		
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 		C2D_SceneBegin(btm);
@@ -52,12 +62,13 @@ void textBox(char* message, u32 color, float scale){
 		C2D_DrawText(&instr, C2D_WithColor, (int)(160-(instw/2)), 210-insth, 0, 1.0, 1.0, C2D_Color32(60, 60, 60, 255));
 		C3D_FrameEnd(0);
 	}
+	return 1;
 }
 
 void success(char* message){
-	textBox(message, C2D_Color32(20, 255, 133, 255), 0.6f); // Light green
+	textBox(message, C2D_Color32(20, 255, 133, 255), 0); // Light green
 }
 
 void error(char* message){
-	textBox(message, C2D_Color32(255, 45, 12, 255), 0.6f); // Annoying red
+	textBox(message, C2D_Color32(255, 45, 12, 255), 0); // Annoying red
 }

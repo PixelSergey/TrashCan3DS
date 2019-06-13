@@ -29,9 +29,10 @@ void draw();
 * Shows a message on-screen until the (A) button is pressed.
 * @param message The message to be displayed
 * @param color The color of the text to be displayed
-* @param scale The scale factor of the text
+* @param type The type of texttbox to show: 0 = OK, 1 = YES/NO
+* @return The user's choice: 0=NO, 1=YES/OK
 */
-void textBox(char* message, u32 color, float scale);
+int textBox(char* message, u32 color, int type);
 
 /**
 * Shows a textBox with green text on-screen.

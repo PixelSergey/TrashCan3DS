@@ -6,7 +6,7 @@ int main(int argc, char* argv[]){
 	if(R_FAILED(init())) return quit();
 
 	u64 deletionQueue[60] = {0};
-	int deletionCount = refreshQueue();
+	int deletionCount = refreshQueue(deletionQueue);
 	if(deletionCount < 0) return quit();
 
 	aptHook(&aptCookie, returnAptHook, (void*)deletionQueue);
@@ -17,11 +17,15 @@ int main(int argc, char* argv[]){
 		if(kDown & KEY_START)
 			break; // Break in order to return to menu
 		if(kDown & KEY_A){
-			if(R_FAILED(deleteTitles(deletionQueue, deletionCount, 0))){error("Could not delete titles"); break;}
+			Result res = deleteTitles(deletionQueue, deletionCount, 0);
+			if(res == 1) break;
+			if(R_FAILED(res)){error("Could not delete titles"); break;}
 			success("Deleted titles successfully");
 		}
 		if(kDown & KEY_B){
-			if(R_FAILED(deleteTitles(deletionQueue, deletionCount, 1))){error("Could not delete titles/tickets"); break;}
+			Result res = deleteTitles(deletionQueue, deletionCount, 1);
+			if(res == 1) break;
+			if(R_FAILED(res)){error("Could not delete titles/tickets"); break;}
 			success("Deleted titles and tickets successfully");
 		}
 		if(kDown & KEY_X){

@@ -100,7 +100,7 @@ int refreshQueue();
 * @param toDelete An array of u64 TitleIDs of apps to be deleted
 * @param length The number of elements in the array
 * @param deleteTickets Delete tickets or not? 0=false, 1=true
-* @return A success value
+* @return 0 on regular success, 1 if Trashcan itself was deleted, and a result value on failure
 */
 Result deleteTitles(u64* toDelete, int length, int deleteTickets);
 

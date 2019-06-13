@@ -11,3 +11,8 @@
 
 #include "extractor.h"
 #include "gui.h"
+
+/**
+* Main program logic
+*/
+int main();

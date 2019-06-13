@@ -156,8 +156,16 @@ int refreshQueue(u64 deletionQueue[const 60]){
 }
 
 Result deleteTitles(u64* toDelete, int length, int deleteTickets){
-	Result res;
+	Result res = 0;
+	Result deleted = 0;
+	u64 pID;
+	APT_GetProgramID(&pID);
 	for(int i=0; i<length; i++){
+		if(toDelete[i] == pID){
+			if(textBox("Are you sure you want to\ndelete Trashcan as well?", C2D_Color32(255, 178, 0, 255), 1)==0) continue;
+			else deleted = 1;
+		}
+		
 		res = AM_DeleteAppTitle(MEDIATYPE_SD, toDelete[i]);
 		if(R_FAILED(res)) return res;
 		if(deleteTickets!=0){
@@ -165,7 +173,7 @@ Result deleteTitles(u64* toDelete, int length, int deleteTickets){
 			if(R_FAILED(res)) return res;
 		}
 	}
-	return RL_SUCCESS;
+	return deleted;
 }
 
 void returnAptHook(APT_HookType hook, void* param){
