@@ -74,35 +74,28 @@ Result loadLauncher();
 Result loadSaveData();
 
 /**
-* Finds the index of the trash folder in Launcher.dat. Launcher.dat must be loaded into its global variable.
-* @return The index of the trash folder, or -1 if it does not exist
+* Finds the index of the trash folder in Launcher.dat and loads it into its global variable.
+* Launcher.dat must be loaded into its global variable.
 */
-s8 findTrashFolder();
+void findTrashFolder();
 
 /**
-* Finds the TitleIDs of the titles in provided folder.
-* This function trusts that there are no more than 60 titles in one folder, which is what the 3DS normally allows.
-* (Technically, if SaveData.dat is modified externally, up to 360 titles can point to one folder, but the 3DS will not allow this normally)
-* @param buf A u64 array of length (at least) 60 to write the matched TitleIDs to
-* @param folderID The ID of the folder to match titles to
-* @return The number of titleIDs written
+* Finds the titleIDs of the apps in the folder loaded by findTrashFolder() adn loads them into the deletionQueue.
 */
-int findTitlesInFolder(u64 buf[const 60], s8 folderID);
+void findTitlesInFolder();
 
 /**
 * Refreshes the queue of titles to delete into the deletionQueue global variable.
-* @return the number of TitleIDs added to the queue, or -1 on failure
+* @return the number of TitleIDs in the queue, or -1 on failure
 */
 int refreshQueue();
 
 /**
-* Deletes titles (and tickets) from an array of titleIDs.
-* @param toDelete An array of u64 TitleIDs of apps to be deleted
-* @param length The number of elements in the array
+* Deletes titles (and tickets) from the global deletionQueue variable.
 * @param deleteTickets Delete tickets or not? 0=false, 1=true
 * @return 0 on regular success, 1 if Trashcan itself was deleted, and a result value on failure
 */
-Result deleteTitles(u64* toDelete, int length, int deleteTickets);
+Result deleteTitles(int deleteTickets);
 
 /**
 * A hook function to the APT service used to reload titles automatically when the app is restored from the HOME menu.

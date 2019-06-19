@@ -1,8 +1,11 @@
 #include "extractor.h"
 
 // Global variables for easy access
-char launcher[0x1e47]; // Size of Launcher.dat from https://3dbrew.org/wiki/Home_Menu
-char savedata[0x141b]; // Size of SaveData.dat from https://3dbrew.org/wiki/Home_Menu
+static char launcher[0x1e47]; // Size of Launcher.dat from https://3dbrew.org/wiki/Home_Menu
+static char savedata[0x141b]; // Size of SaveData.dat from https://3dbrew.org/wiki/Home_Menu
+static u64 deletionQueue[60];
+static int deletionCount;
+static int trashID;
 
 int init(){
 	// Initialise services
@@ -17,6 +20,7 @@ int init(){
 }
 
 int quit(){
+	guiExit();
 	romfsExit();
 	amExit();
 	cfguExit();
@@ -104,7 +108,7 @@ Result loadSaveData(){
 
 	/*
 	res = dumpBuffer(savedata, sizeof(savedata), "/SaveData.dat");
-	if(R_FAILED(res)){error("Failed to dump Launcher.dat\n"); return res;}
+	if(R_FAILED(res)){error("Failed to dump Launcher.dat"); return res;}
 	*/
 
 	FSFILE_Close(savedataFile);
@@ -112,7 +116,7 @@ Result loadSaveData(){
 	return RL_SUCCESS;
 }
 
-s8 findTrashFolder(){
+void findTrashFolder(){
 	u16 folderNames[60][0x11]; // 60 folder names, made up of 0x11 utf-16 chars
 	memcpy(folderNames, launcher+0x1560, sizeof(folderNames)); // Extract folder names at 0x1560 from Launcher.dat
 	/* dumpBuffer(folderNames, sizeof(folderNames), "/names.dat"); */
@@ -121,63 +125,62 @@ s8 findTrashFolder(){
 	utf8_to_utf16(folderstr, (u8*)"Trash", sizeof(folderstr));
 	for(int i=0; i<60; i++){
 		if(memcmp(folderstr, folderNames[i], sizeof(folderstr))==0){
-			return i;
+			trashID = i;
+			return;
 		}
 	}
 	error("Could not find Trash folder");
-	return -1;
 }
 
-int findTitlesInFolder(u64 buf[const 60], s8 folderID){
+void findTitlesInFolder(){
 	s8 folderStatus[360];
 	u64 titleIDs[360];
 	memcpy(folderStatus, savedata+0xf80, sizeof(folderStatus)); // Extract which folder titles belong to from 0xf80 of SaveData.dat
 	memcpy(titleIDs, savedata+0x8, sizeof(titleIDs)); // Extract corresponding TitleIDs from 0x8 of SaveData.dat
 
-	int position = 0;
+	deletionCount = 0;
 	for(int i=0; i<360; i++){
-		if(folderStatus[i] == folderID){
-			buf[position] = titleIDs[i];
-			position++;
+		if(folderStatus[i] == trashID){
+			deletionQueue[deletionCount] = titleIDs[i];
+			deletionCount++;
 		}
 	}
-	return position;
 }
 
-int refreshQueue(u64 deletionQueue[const 60]){
+int refreshQueue(){
 	if(R_FAILED(loadLauncher())) return -1;
 	if(R_FAILED(loadSaveData())) return -1;
 	if((u8)launcher[0]<0x2d || (u8)savedata[0]<0x4){error("Outdated HOME menu archives.\nPlease update your system to the latest version!"); return -1;}
 
-	s8 trashID = findTrashFolder();
+	findTrashFolder();
 	if(trashID == -1) return -1;
-	int deletionCount = findTitlesInFolder(deletionQueue, trashID);
+	findTitlesInFolder();
 	return deletionCount;
 }
 
-Result deleteTitles(u64* toDelete, int length, int deleteTickets){
+Result deleteTitles(int deleteTickets){
 	Result res = 0;
 	Result deleted = 0;
 	u64 pID;
 	APT_GetProgramID(&pID);
-	for(int i=0; i<length; i++){
-		if(toDelete[i] == pID){
+	for(int i=0; i<deletionCount; i++){
+		if(deletionQueue[i] == pID){
 			if(textBox("Are you sure you want to\ndelete Trashcan as well?", C2D_Color32(255, 178, 0, 255), 1)==0) continue;
 			else deleted = 1;
 		}
 		
-		res = AM_DeleteAppTitle(MEDIATYPE_SD, toDelete[i]);
+		res = AM_DeleteAppTitle(MEDIATYPE_SD, deletionQueue[i]);
 		if(R_FAILED(res)) return res;
 		if(deleteTickets!=0){
-			res = AM_DeleteTicket(toDelete[i]);
+			res = AM_DeleteTicket(deletionQueue[i]);
 			if(R_FAILED(res)) return res;
 		}
 	}
 	return deleted;
 }
 
-void returnAptHook(APT_HookType hook, void* param){
+void returnAptHook(APT_HookType hook, void* pleaseRefresh){
 	if(hook == APTHOOK_ONRESTORE){
-		refreshQueue((u64*)param);
+		*(int*)pleaseRefresh = 1;
 	}
 }
